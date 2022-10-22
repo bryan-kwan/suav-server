@@ -13,7 +13,7 @@ app = Flask(__name__)
 #Set the root path to return an HTML file
 @app.get('/')
 def index():
-    return send_from_directory('vue/dist/', 'index.html')
+    return render_template('index.html') # Previously send_from_directory('vue/dist', 'index.html') [Wasn't working]
 
 @app.get('/version/')
 def version():
