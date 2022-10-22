@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <style>
+        /* CSS could probably be moved to an assets file at some point, not high priority */
+        .row {
+            display: flex;
+        }
+
+        .column-75 {
+            flex: 75%;
+        }
+
+        .column-25 {
+            flex: 25%;
+        }
+
+        button {
+            display: block;
+            height: 96px;
+            margin: 4px;
+            width: 98%;
+        }
+
+        .bordered {
+            border: 1px solid #000000;
+        }
+
+        .detection-box {
+            border: 2px solid;
+            position: absolute
+        }
+
+        .hover-box {
+            display: none
+        }
+
+        .detection-box:hover + .hover-box {
+            display: block;
+            position: absolute;
+            background-color:darkgray;
+            z-index: 1;
+        }
+    </style>
+</head>
+
+<body style="background-color:darkgray;">
+    <div class="row">
+        <div id="box-display" class="column-75" style="position: relative">
+            <img id="big-pic" src="assets/suav.png" style="max-height: 940px">
+        </div>
+        <div class="column-25 bordered" id="list" style="max-height: 500px">
+            Loading...
+        </div>
+    </div>
+</body>
+
+<script>
+    //below code is pretty awful but it works, should ideally be replaced by a better web dev than i (low prio unless it gets too messy later on)
+    const imageFileType = ".jpg" //presume all incoming images are .jpg
+    var currentDetections;
+
+    //get all images available
+    window.onload = () => {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                var obj = JSON.parse(xhttp.responseText)
+                var list = document.getElementById("list")
+                list.innerHTML = ""
+                var last
+                obj.forEach(img => {
+                    var name = /\\(.*?)\./.exec(img)[1]
+                    list.innerHTML += `<button id="img_${name}" onclick="loadBigPic('${name}')""><div><img id="img-${name}" src="${img}" height=84px style="float: left">${name}</div></button>`
+                    last = name
+                })
+                loadBigPic(last)
+            }
+        };
+        xhttp.open("GET", "images/", true);
+        xhttp.send();
+    }
+
+    //gets the displayed picture and all load its detections
+    function loadBigPic(img) {
+        document.getElementById("big-pic").src = `images/${img}.jpg`
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                var detections = JSON.parse(xhttp.responseText)
+                currentDetections = detections.detections
+                loadBoxes(940/document.getElementById("big-pic").naturalHeight)
+            }
+        };
+        xhttp.open("GET", `images/${img}.jpg.json`, true);
+        xhttp.send();
+    }
+
+    //draws the detections boxes
+    function loadBoxes(scale){
+        document.querySelectorAll('.detection-box').forEach(e => e.remove());
+        currentDetections.forEach((box, index) => {
+            boxElem = document.createElement("div")
+            boxElem.classList.add("detection-box")
+            boxElem.style.height = `${box.height*scale}px`
+            boxElem.style.width = `${box.width*scale}px`
+            boxElem.style.left = `${box.x*scale}px`
+            boxElem.style.top = `${box.y*scale}px`
+            boxElem.dataset.index = index
+            switch(box.object){
+                case "circle":
+                    boxElem.style.borderColor = "red"
+                break;
+                case "semicircle":
+                    boxElem.style.borderColor = "tomato"
+                break;
+                case "quarter circle":
+                    boxElem.style.borderColor = "orange"
+                break;
+                case "triangle":
+                    boxElem.style.borderColor = "gold"
+                break;
+                case "square":
+                    boxElem.style.borderColor = "yellow"
+                break;
+                case "rectangle":
+                    boxElem.style.borderColor = "greenyellow"
+                break;
+                case "trapezoid":
+                    boxElem.style.borderColor = "limegreen"
+                break;
+                case "pentagon":
+                    boxElem.style.borderColor = "darkturquoise"
+                break;
+                case "hexagon":
+                    boxElem.style.borderColor = "dodgerblue"
+                break;
+                case "heptagon":
+                    boxElem.style.borderColor = "midnightblue"
+                break;
+                case "octagon":
+                    boxElem.style.borderColor = "darkslateblue"
+                break;
+                case "star":
+                    boxElem.style.borderColor = "indigo"
+                break;
+                case "cross":
+                    boxElem.style.borderColor = "violet"
+                break;
+                default:
+                    boxElem.style.borderColor = "black"
+            }
+            document.getElementById("box-display").appendChild(boxElem)
+            hoverElem = document.createElement("div")
+            hoverElem.classList.add("hover-box")
+            hoverElem.classList.add("bordered")
+            hoverElem.style.height = '150px'
+            hoverElem.style.width = '200px'
+            hoverElem.style.top = `${box.y*scale}px`
+            hoverElem.style.left = `${(box.x + box.width)*scale+4}px`
+            hoverElem.innerHTML = `<div><strong>${box.object}</strong></div>`
+            document.getElementById("box-display").appendChild(hoverElem)
+        })
+    }
+</script>
+
+</html>
